@@ -10,6 +10,8 @@ from utils.Func.Src.path import *
 
 from utils.Crawler.BaseCrawler.Algo import BinaryRollBack
 
+global_logger=create_custom_logger("Crawler", logging.INFO, None, "log/Crawler.log")
+
 
 class BaseCrawler:
     def __init__(self, server, target) -> None:
@@ -60,14 +62,11 @@ class BaseCrawler:
             "https": "http://127.0.0.1:7890",
         }
         self._use_proxy = False
-        self._threadpool = DarkThreadPool(75)
+        self._info_crawled = False
 
     def _init_utils(self):
         self._threadpool = DarkThreadPool(75)
         self._rollback_method = BinaryRollBack(10)
-        self._logger = create_custom_logger(
-            "Base Crawler", logging.INFO, "log/Crawler.log"
-        )
 
     @staticmethod
     def _beautify_content(content):
@@ -132,7 +131,7 @@ class BaseCrawler:
                 succeed = self._check_content(str(content))
                 break
             except Exception as e:
-                self._logger.error("{}".format(e))
+                global_logger.error("{}".format(e))
                 time.sleep(self._rollback_method.select(retry_count))
         if not succeed:
             self._content_list.append(("", index))
@@ -148,9 +147,9 @@ class BaseCrawler:
         while len(self._content_list) != self._catalog_num:
             time.sleep(0.5)
         for i in range(self._max_redownload_times):
-            self._logger.info("{} pages download failed.".format(len(self._fails)))
+            iprint("{} pages download failed.".format(len(self._fails)))
             if len(self._fails) < self._max_fail_rate * self._catalog_num:
-                self._logger.info(
+                iprint(
                     "Fail rate lower than max fail rate, finish crawling."
                 )
                 break
@@ -162,13 +161,21 @@ class BaseCrawler:
                 self._threadpool.submit(self._crawl_content, args=arg)
         self._content_list = sorted(self._content_list, key=lambda x: x[1])
 
+    def _crawl_book_info(self):
+        if not self._info_crawled:
+            self._crawl_homepage()
+            self._crawl_catalog()
+            self._crawl_information()
+            self._info_crawled = True
+
+    def crawl_book_info(self):
+        self._crawl_book_info()
+
     def run(self, use_proxy=False):
         self._use_proxy = use_proxy
-        self._crawl_homepage()
-        self._crawl_catalog()
-        self._crawl_information()
+        self._crawl_book_info()
 
-        print(
+        iprint(
             "Book Name: {}\nAuthor: {}\nLast Update Time: {}".format(
                 self._bookname, self._author, self._last_update_time
             )
@@ -187,3 +194,6 @@ class BaseCrawler:
             self._catalog_num,
             self._output_dir,
         )
+
+    def get_book_name(self):
+        return self._bookname

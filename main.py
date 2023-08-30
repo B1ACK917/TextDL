@@ -1,40 +1,48 @@
-from utils.Crawler.XBiqugeSpider import XBiqugeSpider
+from utils.Crawler.ibCrawler import ibCrawler
+from utils.Crawler.qulaCrawler import qulaCrawler
+from utils.Func.Src.logger import iprint
+from utils.Crawler.epubmaker import EpubMaker
 from tqdm import tqdm
 import time
 
 
-def gen_spider(url, spe_server=None):
-    support_list = [("ibiquge", XBiqugeSpider)]
-    for server, spider_object in support_list:
+def gen_crawler(url):
+    support_list = [("ibiquge", ibCrawler), ("qu-la", qulaCrawler)]
+    for server, crawler_object in support_list:
         if server in url:
-            return spider_object(url.strip())
+            crawler = crawler_object(url.strip())
+            crawler.crawl_book_info()
+            return crawler
     return None
 
 
-def run_spider(spiders, use_proxy):
-    books_list = [spider.get_book_name() for spider in spiders]
-    print("\nDownload list: {}.\nType enter to continue.".format(books_list))
+def run_crawler(crawlers):
+    books_list = [crawler.get_book_name() for crawler in crawlers]
+    iprint("\nDownload list: {}.\nType enter to continue.".format(books_list))
     interrupt = input()
     if interrupt:
         exit(1)
-    for spider in spiders:
+    for crawler in crawlers:
         try:
             begin_time = time.perf_counter()
-            spider.run(use_proxy)
+            crawler.run()
             total_time = time.perf_counter() - begin_time
-            print(
+            iprint(
                 "{} has been downloaded. Elapsed time: {} min,{} s\n".format(
-                    spider.get_book_name(), int(total_time // 60), int(total_time % 60)
+                    crawler.get_book_name(), int(total_time // 60), int(total_time % 60)
                 )
             )
-            time.sleep(4)
-        except:
+            iprint("Begin generating epub...")
+            epub = EpubMaker()
+            epub.set_arg(*crawler.get_book())
+            epub.run()
+            iprint("Epub generated")
+        except Exception as e:
             continue
 
 
 def run_auto():
-    urls, spiders = [], []
-    use_proxy = False
+    urls, crawlers = [], []
     print("\nDownload URLs:")
     while True:
         download_url = input()
@@ -42,10 +50,11 @@ def run_auto():
             break
         urls.append(download_url)
     for url in tqdm(urls, ncols=50):
-        spiders.append(gen_spider(url))
+        crawlers.append(gen_crawler(url))
         time.sleep(1)
 
-    run_spider(spiders, use_proxy)
+    run_crawler(crawlers)
+
 
 if __name__ == "__main__":
     run_auto()
