@@ -177,7 +177,7 @@ class BaseCrawler:
         self._output = self._bookname + ".epub"
         self._content_list = [i[0] for i in self._content_list]
 
-    def get(self):
+    def get_book(self):
         return (
             self._bookname,
             self._author,
