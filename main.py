@@ -1,24 +1,10 @@
-from utils.Spider.XBiqugeSpider import XBiqugeSpider
-from utils.Spider.biqu5200Spider import biqu5200Spider
-from utils.Spider.bquSpider import bqgSpider
+from utils.Crawler.XBiqugeSpider import XBiqugeSpider
 from tqdm import tqdm
 import time
-import os
-
-
-def run_proxy(_t):
-    if _t == 1:
-        os.system("python resource/proxy_pool-2.1.0/proxyPool.py schedule")
-    elif _t == 2:
-        os.system("python resource/proxy_pool-2.1.0/proxyPool.py server")
 
 
 def gen_spider(url, spe_server=None):
-    support_list = [
-        ("ibiquge", XBiqugeSpider),
-        ("bqu9", bqgSpider),
-        ("biqu5200", biqu5200Spider),
-    ]
+    support_list = [("ibiquge", XBiqugeSpider)]
     for server, spider_object in support_list:
         if server in url:
             return spider_object(url.strip())
@@ -48,11 +34,6 @@ def run_spider(spiders, use_proxy):
 
 def run_auto():
     urls, spiders = [], []
-    # print('Use Proxy, N to cancel')
-    # use_proxy = True
-    # if input() == 'N':
-    #     use_proxy = False
-    #     print('Cancelled using proxy')
     use_proxy = False
     print("\nDownload URLs:")
     while True:
@@ -66,8 +47,5 @@ def run_auto():
 
     run_spider(spiders, use_proxy)
 
-
-
 if __name__ == "__main__":
-    # test()
     run_auto()
