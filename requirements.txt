@@ -2,3 +2,4 @@ tqdm
 ebooklib
 requests
 beautifulsoup4
+lxml

@@ -175,11 +175,9 @@ class BaseCrawler:
         self._use_proxy = use_proxy
         self._crawl_book_info()
 
-        iprint(
-            "Book Name: {}\nAuthor: {}\nLast Update Time: {}".format(
-                self._bookname, self._author, self._last_update_time
-            )
-        )
+        iprint("Book Name: {}".format(self._bookname))
+        iprint("Author: {}".format(self._author))
+        iprint("Last Update Time: {}".format(self._last_update_time))
         self._download()
         self._output = self._bookname + ".epub"
         self._content_list = [i[0] for i in self._content_list]
