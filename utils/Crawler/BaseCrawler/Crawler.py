@@ -10,7 +10,7 @@ from utils.Func.Src.path import *
 
 from utils.Crawler.BaseCrawler.Algo import BinaryRollBack
 
-global_logger=create_custom_logger("Crawler", logging.INFO, None, "log/Crawler.log")
+global_logger = create_custom_logger("Crawler", logging.INFO, None, "log/Crawler.log")
 
 
 class BaseCrawler:
@@ -149,16 +149,14 @@ class BaseCrawler:
         for i in range(self._max_redownload_times):
             iprint("{} pages download failed.".format(len(self._fails)))
             if len(self._fails) < self._max_fail_rate * self._catalog_num:
-                iprint(
-                    "Fail rate lower than max fail rate, finish crawling."
-                )
+                iprint("Fail rate lower than max fail rate, finish crawling.")
                 break
             print("Redownloading fail pages")
             fails = self._fails.copy()
             self._fails.clear()
             self._content_list = self._content_list_AL.copy()
             for arg in fails:
-                self._threadpool.submit(self._crawl_content, args=arg)
+                self._threadpool.submit(self._crawl_content, *arg)
         self._content_list = sorted(self._content_list, key=lambda x: x[1])
 
     def _crawl_book_info(self):
@@ -195,3 +193,6 @@ class BaseCrawler:
 
     def get_book_name(self):
         return self._bookname
+
+    def get_output_path(self):
+        return os.path.join(self._output_dir, self._output)

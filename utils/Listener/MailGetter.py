@@ -4,17 +4,28 @@ import arrow
 from . import MailParser
 
 
+from utils.Func.Src.logger import *
+
+
 class Mail(object):
     def __init__(self, raw_mail):
-        self.__autoCode = 'AuthTest'
-        decoded = b'\r\n'.join(raw_mail).decode('utf-8')
+        self.__autoCode = "AuthTest"
+        decoded = b"\r\n".join(raw_mail).decode("utf-8")
         self.__msg = Parser().parsestr(decoded)
         self._parse_mail()
 
     def _parse_mail(self):
-        self._datetime = arrow.get(MailParser.parse_mail_time(self.__msg.get('date'))).format('YYYY-MM-DD HH:mm')
+        self._datetime = arrow.get(
+            MailParser.parse_mail_time(self.__msg.get("date"))
+        ).format("YYYY-MM-DD HH:mm")
         parsed_header = MailParser.parser_email_header(self.__msg)
-        self._subject, self._from_name, self._from_address, self._to_name, self._to_address = parsed_header
+        (
+            self._subject,
+            self._from_name,
+            self._from_address,
+            self._to_name,
+            self._to_address,
+        ) = parsed_header
         self._content = MailParser.parse_mail_content(self.__msg)
 
     def get_content(self):
@@ -27,17 +38,26 @@ class Mail(object):
         return self.__autoCode in self._subject
 
     def __str__(self):
-        return 'Time: {}\n' \
-               'Subject:{}\n' \
-               'From: {},{}\n' \
-               'To: {},{}\n' \
-               'Content:\n{}'.format(self._datetime, self._subject, self._from_name, self._from_address, self._to_name,
-                                     self._to_address, self._content)
+        return (
+            "Time: {}\n"
+            "Subject:{}\n"
+            "From: {},{}\n"
+            "To: {},{}\n"
+            "Content:\n{}".format(
+                self._datetime,
+                self._subject,
+                self._from_name,
+                self._from_address,
+                self._to_name,
+                self._to_address,
+                self._content,
+            )
+        )
 
 
 class Getter(object):
     def __init__(self):
-        self._pop3Address = 'pop.qq.com'
+        self._pop3Address = "pop.qq.com"
 
     def _parse_email_server(self):
         email_server = self._server
@@ -58,15 +78,17 @@ class Getter(object):
         return new_mails
 
     def _connect_pop3(self, show_info=False):
-        self._server = poplib.POP3_SSL(host=self._pop3Address, port=self._serverPort, timeout=10)
+        self._server = poplib.POP3_SSL(
+            host=self._pop3Address, port=self._serverPort, timeout=10
+        )
         if show_info:
-            print('Init Server.')
+            iprint("Init Server.")
         self._server.user(self._address)
         if show_info:
-            print('Set User.')
+            iprint("Set User.")
         self._server.pass_(self._authCode)
         if show_info:
-            print('Auth.')
+            iprint("Auth.")
 
     def _login(self, address, auth_code, server_port):
         self._address = address
@@ -76,10 +98,10 @@ class Getter(object):
         self._parse_email_server()
 
     def login(self, address, auth_code, server_port=995):
-        assert len(address) > 7 and address[-7:] == '@qq.com', 'Invalid Email Address.'
-        assert len(auth_code) == 16, 'Invalid Authentication Code.'
+        assert len(address) > 7 and address[-7:] == "@qq.com", "Invalid Email Address."
+        assert len(auth_code) == 16, "Invalid Authentication Code."
         if server_port != 995:
-            print('Change Default Server Port From 995 to {}'.format(server_port))
+            iprint("Change Default Server Port From 995 to {}".format(server_port))
         self._login(address, auth_code, server_port)
 
     def get_current_mail_nums(self):
