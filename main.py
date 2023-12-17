@@ -1,5 +1,8 @@
 from utils.Crawler.ibCrawler import ibCrawler
 from utils.Crawler.qulaCrawler import qulaCrawler
+from utils.Crawler.bqg66Crawler import bqg66Crawler
+from utils.Crawler.qzfsCrawler import qzfsCrawler
+from utils.Crawler.bqgeCrawler import bqgeCrawler
 from utils.Func.Src.logger import iprint
 from utils.Crawler.epubmaker import EpubMaker
 from tqdm import tqdm
@@ -7,7 +10,11 @@ import time
 
 
 def gen_crawler(url):
-    support_list = [("ibiquge", ibCrawler), ("qu-la", qulaCrawler)]
+    support_list = [("ibiquge", ibCrawler),
+                    ("qu-la", qulaCrawler),
+                    ("biquge66", bqg66Crawler),
+                    ("quanzhifashi", qzfsCrawler),
+                    ("bqge", bqgeCrawler)]
     for server, crawler_object in support_list:
         if server in url:
             crawler = crawler_object(url.strip())

@@ -10,7 +10,7 @@ from utils.Func.Src.path import *
 
 from utils.Crawler.BaseCrawler.Algo import BinaryRollBack
 
-global_logger=create_custom_logger("Crawler", logging.INFO, None, "log/Crawler.log")
+global_logger = create_custom_logger("Crawler", logging.INFO, None, "log/Crawler.log")
 
 
 class BaseCrawler:
@@ -19,7 +19,7 @@ class BaseCrawler:
         self._target = target
         self._default_header = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/75.0.3770.80 Safari/537.36",
+                          "Chrome/75.0.3770.80 Safari/537.36",
         }
         self.__init_params_and_default()
 
@@ -99,10 +99,10 @@ class BaseCrawler:
         self._clean_information(bookname, author, last_update, intro)
 
     def _clean_information(self, bookname, author, last_update, intro):
-        self._bookname = bookname[0].get_text()
-        self._author = author[0].get_text()
-        self._last_update_time = last_update[0].get_text()
-        self._intro = intro[0].get_text()
+        self._bookname = bookname[0].get_text().encode(self._decode_type).decode(self._decode_type).strip()
+        self._author = author[0].get_text().encode(self._decode_type).decode(self._decode_type).strip()
+        self._last_update_time = last_update[0].get_text().encode(self._decode_type).decode(self._decode_type).strip()
+        self._intro = intro[0].get_text().encode(self._decode_type).decode(self._decode_type).strip()
 
     def _crawl_content(self, url, index):
         succeed = False
@@ -153,12 +153,14 @@ class BaseCrawler:
                     "Fail rate lower than max fail rate, finish crawling."
                 )
                 break
-            print("Redownloading fail pages")
+            print("Redownloading failed pages")
             fails = self._fails.copy()
             self._fails.clear()
             self._content_list = self._content_list_AL.copy()
-            for arg in fails:
-                self._threadpool.submit(self._crawl_content, args=arg)
+            for url, i in tqdm(fails, postfix="Resubmitting crawling task"):
+                self._threadpool.submit(self._crawl_content, url, i)
+            while len(self._content_list) != self._catalog_num:
+                time.sleep(0.5)
         self._content_list = sorted(self._content_list, key=lambda x: x[1])
 
     def _crawl_book_info(self):
