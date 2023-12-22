@@ -3,21 +3,30 @@ from utils.Crawler.qulaCrawler import qulaCrawler
 from utils.Crawler.bqg66Crawler import bqg66Crawler
 from utils.Crawler.qzfsCrawler import qzfsCrawler
 from utils.Crawler.bqgeCrawler import bqgeCrawler
-from utils.Func.Src.logger import iprint
+from Shinomiya.Src.logger import iprint
 from utils.Crawler.epubmaker import EpubMaker
 from tqdm import tqdm
 import time
+import argparse
+
+parser = argparse.ArgumentParser(description="Parser")
+parser.add_argument("-p", "--proxy", action="store_true", help="custom proxy")
+parser.add_argument("-o", "--proxypool", action="store_true", help="use proxypool")
+parser.add_argument("-v", "--validate", action="store_true", help="validate proxy")
 
 
-def gen_crawler(url):
-    support_list = [("ibiquge", ibCrawler),
-                    ("qu-la", qulaCrawler),
-                    ("biquge66", bqg66Crawler),
-                    ("quanzhifashi", qzfsCrawler),
-                    ("bqge", bqgeCrawler)]
+def gen_crawler(url, use_custom_proxy, use_proxy_pool, validate_proxy):
+    support_list = [
+        ("ibiquge", ibCrawler),
+        ("qu-la", qulaCrawler),
+        ("biquge66", bqg66Crawler),
+        ("quanzhifashi", qzfsCrawler),
+        ("bqge", bqgeCrawler),
+    ]
     for server, crawler_object in support_list:
         if server in url:
             crawler = crawler_object(url.strip())
+            crawler.set_proxy(use_custom_proxy, use_proxy_pool, validate_proxy)
             crawler.crawl_book_info()
             return crawler
     return None
@@ -48,7 +57,7 @@ def run_crawler(crawlers):
             continue
 
 
-def run_auto():
+def run_auto(use_custom_proxy, use_proxy_pool, validate_proxy):
     urls, crawlers = [], []
     print("\nDownload URLs:")
     while True:
@@ -57,11 +66,12 @@ def run_auto():
             break
         urls.append(download_url)
     for url in tqdm(urls, ncols=50):
-        crawlers.append(gen_crawler(url))
+        crawlers.append(gen_crawler(url, use_custom_proxy, use_proxy_pool, validate_proxy))
         time.sleep(1)
 
     run_crawler(crawlers)
 
 
 if __name__ == "__main__":
-    run_auto()
+    args = parser.parse_args()
+    run_auto(args.proxy, args.proxypool, args.validate)

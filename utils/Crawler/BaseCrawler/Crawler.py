@@ -4,13 +4,13 @@ import os
 import time
 from tqdm import tqdm
 
-from utils.Func.Src.logger import *
-from utils.Func.Src.threadpool import DarkThreadPool
-from utils.Func.Src.path import *
+from Shinomiya.Src.logger import *
+from Shinomiya.Src.threadpool import DarkThreadPool
+from Shinomiya.Src.path import *
 
 from utils.Crawler.BaseCrawler.Algo import BinaryRollBack
 
-global_logger = create_custom_logger("Crawler", logging.INFO, None, "log/Crawler.log")
+crawler_logger = create_custom_logger("Crawler", logging.INFO, None, "log/Crawler.log")
 
 
 class BaseCrawler:
@@ -19,7 +19,7 @@ class BaseCrawler:
         self._target = target
         self._default_header = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-                          "Chrome/75.0.3770.80 Safari/537.36",
+            "Chrome/75.0.3770.80 Safari/537.36",
         }
         self.__init_params_and_default()
 
@@ -57,16 +57,42 @@ class BaseCrawler:
         check_path(self._output_dir)
         self._decode_type = "utf-8"
         self._fails = []
-        self._clash_proxy = {
-            "http": "http://127.0.0.1:7890",
-            "https": "http://127.0.0.1:7890",
+        self._custom_proxy = {
+            "http": "http://127.0.0.1:20172",
+            "https": "http://127.0.0.1:20172",
         }
-        self._use_proxy = False
+        self._use_custom_proxy = False
+        self._proxy_pool = "http://127.0.0.1:5555/random"
+        self._use_proxy_pool = False
+        self._validate_proxy = False
         self._info_crawled = False
 
     def _init_utils(self):
         self._threadpool = DarkThreadPool(75)
         self._rollback_method = BinaryRollBack(10)
+
+    def _get_one_random_proxy_from_pool(self):
+        proxy = requests.get(self._proxy_pool).text.strip()
+        proxies = {"http": "http://" + proxy}
+        return proxies
+
+    def _get_proxy_from_pool(self):
+        if self._validate_proxy:
+            while True:
+                try:
+                    proxies = self._get_one_random_proxy_from_pool()
+                    requests.get(
+                        self._target,
+                        headers=self._default_header,
+                        proxies=proxies,
+                        timeout=3,
+                    )
+                    return proxies
+                except Exception as e:
+                    crawler_logger.error("validate proxy failed, retry with new proxy.")
+                    continue
+        else:
+            return self._get_one_random_proxy_from_pool()
 
     @staticmethod
     def _beautify_content(content):
@@ -78,7 +104,17 @@ class BaseCrawler:
         return True
 
     def _crawl_homepage(self):
-        homepage = requests.get(self._target, headers=self._default_header)
+        if self._use_custom_proxy:
+            homepage = requests.get(
+                self._target, headers=self._default_header, proxies=self._custom_proxy
+            )
+        elif self._use_proxy_pool:
+            proxies = self._get_proxy_from_pool()
+            homepage = requests.get(
+                self._target, headers=self._default_header, proxies=proxies
+            )
+        else:
+            homepage = requests.get(self._target, headers=self._default_header)
         homepage = homepage.text.encode(homepage.apparent_encoding, "ignore").decode(
             homepage.apparent_encoding, "ignore"
         )
@@ -99,22 +135,54 @@ class BaseCrawler:
         self._clean_information(bookname, author, last_update, intro)
 
     def _clean_information(self, bookname, author, last_update, intro):
-        self._bookname = bookname[0].get_text().encode(self._decode_type).decode(self._decode_type).strip()
-        self._author = author[0].get_text().encode(self._decode_type).decode(self._decode_type).strip()
-        self._last_update_time = last_update[0].get_text().encode(self._decode_type).decode(self._decode_type).strip()
-        self._intro = intro[0].get_text().encode(self._decode_type).decode(self._decode_type).strip()
+        self._bookname = (
+            bookname[0]
+            .get_text()
+            .encode(self._decode_type)
+            .decode(self._decode_type)
+            .strip()
+        )
+        self._author = (
+            author[0]
+            .get_text()
+            .encode(self._decode_type)
+            .decode(self._decode_type)
+            .strip()
+        )
+        self._last_update_time = (
+            last_update[0]
+            .get_text()
+            .encode(self._decode_type)
+            .decode(self._decode_type)
+            .strip()
+        )
+        self._intro = (
+            intro[0]
+            .get_text()
+            .encode(self._decode_type)
+            .decode(self._decode_type)
+            .strip()
+        )
 
     def _crawl_content(self, url, index):
         succeed = False
         content = None
         for retry_count in range(1, self._max_retry_count + 1):
             try:
-                if self._use_proxy:
+                if self._use_custom_proxy:
                     data = requests.get(
                         url=url,
                         headers=self._default_header,
                         timeout=3,
-                        proxies=self._clash_proxy,
+                        proxies=self._custom_proxy,
+                    )
+                elif self._use_proxy_pool:
+                    proxies = self._get_proxy_from_pool()
+                    data = requests.get(
+                        url=url,
+                        headers=self._default_header,
+                        timeout=3,
+                        proxies=proxies,
                     )
                 else:
                     data = requests.get(
@@ -131,7 +199,7 @@ class BaseCrawler:
                 succeed = self._check_content(str(content))
                 break
             except Exception as e:
-                global_logger.error("{}".format(e))
+                crawler_logger.error("{}".format(e))
                 time.sleep(self._rollback_method.select(retry_count))
         if not succeed:
             self._content_list.append(("", index))
@@ -147,13 +215,13 @@ class BaseCrawler:
         while len(self._content_list) != self._catalog_num:
             time.sleep(0.5)
         for i in range(self._max_redownload_times):
-            iprint("{} pages download failed.".format(len(self._fails)))
+            crawler_logger.info("{} pages download failed.".format(len(self._fails)))
             if len(self._fails) < self._max_fail_rate * self._catalog_num:
-                iprint(
+                crawler_logger.info(
                     "Fail rate lower than max fail rate, finish crawling."
                 )
                 break
-            print("Redownloading failed pages")
+            crawler_logger.info("Redownloading failed pages")
             fails = self._fails.copy()
             self._fails.clear()
             self._content_list = self._content_list_AL.copy()
@@ -173,16 +241,27 @@ class BaseCrawler:
     def crawl_book_info(self):
         self._crawl_book_info()
 
-    def run(self, use_proxy=False):
-        self._use_proxy = use_proxy
+    def run(self):
         self._crawl_book_info()
 
-        iprint("Book Name: {}".format(self._bookname))
-        iprint("Author: {}".format(self._author))
-        iprint("Last Update Time: {}".format(self._last_update_time))
+        crawler_logger.info("Book Name: {}".format(self._bookname))
+        crawler_logger.info("Author: {}".format(self._author))
+        crawler_logger.info("Last Update Time: {}".format(self._last_update_time))
         self._download()
         self._output = self._bookname + ".epub"
         self._content_list = [i[0] for i in self._content_list]
+
+    def set_proxy(
+        self, use_custom_proxy=False, use_proxy_pool=False, validate_proxy=False
+    ):
+        self._use_custom_proxy = use_custom_proxy
+        self._use_proxy_pool = use_proxy_pool
+        self._validate_proxy = validate_proxy
+        crawler_logger.info(
+            "\nuse_custom_proxy: {}, use_proxy_pool: {}, validate_proxy: {}\n".format(
+                use_custom_proxy, use_proxy_pool, validate_proxy
+            )
+        )
 
     def get_book(self):
         return (

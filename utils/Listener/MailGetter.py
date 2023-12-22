@@ -4,7 +4,7 @@ import arrow
 from . import MailParser
 
 
-from utils.Func.Src.logger import *
+from Shinomiya.Src.logger import *
 
 
 class Mail(object):

@@ -2,8 +2,8 @@ import time
 import logging
 import json
 
-from utils.Func.Src.logger import *
-from utils.Func.Src.threadpool import DarkThreadPool
+from Shinomiya.Src.logger import *
+from Shinomiya.Src.threadpool import DarkThreadPool
 from utils.Listener.MailGetter import Getter
 from utils.Listener.MailSender import Sender
 from utils.Crawler.ibCrawler import ibCrawler

@@ -5,7 +5,7 @@ from email.mime.text import MIMEText
 import os
 
 
-from utils.Func.Src.logger import *
+from Shinomiya.Src.logger import *
 
 
 class Sender(object):
