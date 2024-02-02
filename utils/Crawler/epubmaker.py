@@ -1,6 +1,7 @@
+import os
+
 from ebooklib import epub
 from tqdm import tqdm
-import os
 
 
 class EpubMaker:

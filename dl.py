@@ -3,6 +3,7 @@ from utils.Crawler.qulaCrawler import qulaCrawler
 from utils.Crawler.bqg66Crawler import bqg66Crawler
 from utils.Crawler.qzfsCrawler import qzfsCrawler
 from utils.Crawler.bqgeCrawler import bqgeCrawler
+from utils.Crawler.yrCrawler import yrCrawler
 from Shinomiya.Src.logger import iprint
 from utils.Crawler.epubmaker import EpubMaker
 from tqdm import tqdm
@@ -22,6 +23,7 @@ def gen_crawler(url, use_custom_proxy, use_proxy_pool, validate_proxy):
         ("biquge66", bqg66Crawler),
         ("quanzhifashi", qzfsCrawler),
         ("bqge", bqgeCrawler),
+        ("yiruan", yrCrawler)
     ]
     for server, crawler_object in support_list:
         if server in url:

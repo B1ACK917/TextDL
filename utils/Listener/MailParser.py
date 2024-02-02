@@ -1,6 +1,6 @@
+from datetime import datetime
 from email.header import decode_header
 from email.utils import parseaddr
-from datetime import datetime
 
 
 def decode_str(s):

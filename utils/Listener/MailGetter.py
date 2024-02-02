@@ -1,10 +1,10 @@
 import poplib
 from email.parser import Parser
-import arrow
-from . import MailParser
 
+import arrow
 
 from Shinomiya.Src.logger import *
+from . import MailParser
 
 
 class Mail(object):

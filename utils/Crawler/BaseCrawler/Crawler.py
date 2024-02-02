@@ -1,13 +1,12 @@
-from bs4 import BeautifulSoup
-import requests
-import os
 import time
+
+import requests
+from bs4 import BeautifulSoup
 from tqdm import tqdm
 
 from Shinomiya.Src.logger import *
-from Shinomiya.Src.threadpool import DarkThreadPool
 from Shinomiya.Src.path import *
-
+from Shinomiya.Src.threadpool import DarkThreadPool
 from utils.Crawler.BaseCrawler.Algo import BinaryRollBack
 
 crawler_logger = create_custom_logger("Crawler", logging.INFO, None, "log/Crawler.log")
@@ -18,8 +17,7 @@ class BaseCrawler:
         self._server = server
         self._target = target
         self._default_header = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/75.0.3770.80 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         }
         self.__init_params_and_default()
 
@@ -55,11 +53,12 @@ class BaseCrawler:
         self._min_word_num = 5
         self._output_dir = os.path.join("output", "epub")
         check_path(self._output_dir)
-        self._decode_type = "utf-8"
+        self._encode_type = "UTF-8"
+        self._decode_type = "UTF-8"
         self._fails = []
         self._custom_proxy = {
-            "http": "http://127.0.0.1:20172",
-            "https": "http://127.0.0.1:20172",
+            "http": "http://127.0.0.1:7890",
+            "https": "http://127.0.0.1:7890",
         }
         self._use_custom_proxy = False
         self._proxy_pool = "http://127.0.0.1:5555/random"
@@ -123,7 +122,7 @@ class BaseCrawler:
     def _crawl_catalog(self):
         catalogs = self._homepage.select(self._catalog_selector)
         for item in catalogs:
-            self._book_catalog.append(item.get_text())
+            self._book_catalog.append(item.get_text().encode(self._encode_type).decode(self._decode_type))
             self._catalog_urls.append(self._server + item.get("href"))
         self._catalog_num = len(self._book_catalog)
 
@@ -138,29 +137,29 @@ class BaseCrawler:
         self._bookname = (
             bookname[0]
             .get_text()
-            .encode(self._decode_type)
-            .decode(self._decode_type)
+            .encode(self._encode_type)
+            .decode(self._decode_type, "ignore")
             .strip()
         )
         self._author = (
             author[0]
             .get_text()
-            .encode(self._decode_type)
-            .decode(self._decode_type)
+            .encode(self._encode_type)
+            .decode(self._decode_type, "ignore")
             .strip()
         )
         self._last_update_time = (
             last_update[0]
             .get_text()
-            .encode(self._decode_type)
-            .decode(self._decode_type)
+            .encode(self._encode_type)
+            .decode(self._decode_type, "ignore")
             .strip()
         )
         self._intro = (
             intro[0]
             .get_text()
-            .encode(self._decode_type)
-            .decode(self._decode_type)
+            .encode(self._encode_type)
+            .decode(self._decode_type, "ignore")
             .strip()
         )
 
@@ -189,10 +188,15 @@ class BaseCrawler:
                         url=url, headers=self._default_header, timeout=3
                     )
                 html = (
-                    data.text.encode(data.apparent_encoding, "ignore")
-                    .decode(data.apparent_encoding, "ignore")
+                    data.text.encode(self._encode_type, "ignore")
+                    .decode(self._decode_type, "ignore")
                     .replace("\r", "")
                 )
+                # html = (
+                #     data.text.encode(data.apparent_encoding, "ignore")
+                #     .decode(data.apparent_encoding, "ignore")
+                #     .replace("\r", "")
+                # )
                 bs = BeautifulSoup(html, "lxml")
                 content = bs.select(self._content_selector)[0]
                 content = self._beautify_content(content)
@@ -252,7 +256,7 @@ class BaseCrawler:
         self._content_list = [i[0] for i in self._content_list]
 
     def set_proxy(
-        self, use_custom_proxy=False, use_proxy_pool=False, validate_proxy=False
+            self, use_custom_proxy=False, use_proxy_pool=False, validate_proxy=False
     ):
         self._use_custom_proxy = use_custom_proxy
         self._use_proxy_pool = use_proxy_pool

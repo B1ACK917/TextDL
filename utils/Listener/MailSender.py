@@ -1,9 +1,8 @@
+import os
 import smtplib
 from email.header import Header
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import os
-
 
 from Shinomiya.Src.logger import *
 
