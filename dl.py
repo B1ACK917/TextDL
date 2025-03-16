@@ -1,14 +1,17 @@
+import argparse
+import time
+
+from tqdm import tqdm
+
+from Shinomiya.Src.logger import iprint
+from utils.Crawler.bqg66Crawler import bqg66Crawler
+from utils.Crawler.bqgeCrawler import bqgeCrawler
+from utils.Crawler.epubmaker import EpubMaker
 from utils.Crawler.ibCrawler import ibCrawler
 from utils.Crawler.qulaCrawler import qulaCrawler
-from utils.Crawler.bqg66Crawler import bqg66Crawler
 from utils.Crawler.qzfsCrawler import qzfsCrawler
-from utils.Crawler.bqgeCrawler import bqgeCrawler
 from utils.Crawler.yrCrawler import yrCrawler
-from Shinomiya.Src.logger import iprint
-from utils.Crawler.epubmaker import EpubMaker
-from tqdm import tqdm
-import time
-import argparse
+from utils.Crawler.bigeeCrawler import bigeeCrawler
 
 parser = argparse.ArgumentParser(description="Parser")
 parser.add_argument("-p", "--proxy", action="store_true", help="custom proxy")
@@ -23,7 +26,8 @@ def gen_crawler(url, use_custom_proxy, use_proxy_pool, validate_proxy):
         ("biquge66", bqg66Crawler),
         ("quanzhifashi", qzfsCrawler),
         ("bqge", bqgeCrawler),
-        ("yiruan", yrCrawler)
+        ("yiruan", yrCrawler),
+        ("bigee", bigeeCrawler)
     ]
     for server, crawler_object in support_list:
         if server in url:
@@ -67,6 +71,9 @@ def run_auto(use_custom_proxy, use_proxy_pool, validate_proxy):
         if not download_url:
             break
         urls.append(download_url)
+    with open("log/download.log", "a") as log:
+        for url in urls:
+            log.write(url + "\n")
     for url in tqdm(urls, ncols=50):
         crawlers.append(gen_crawler(url, use_custom_proxy, use_proxy_pool, validate_proxy))
         time.sleep(1)

@@ -1,4 +1,5 @@
 import time
+import traceback
 
 import requests
 from bs4 import BeautifulSoup
@@ -7,7 +8,7 @@ from tqdm import tqdm
 from Shinomiya.Src.logger import *
 from Shinomiya.Src.path import *
 from Shinomiya.Src.threadpool import DarkThreadPool
-from utils.Crawler.BaseCrawler.Algo import BinaryRollBack
+from utils.Crawler.BaseCrawler.Algo import SequenceRollBack
 
 crawler_logger = create_custom_logger("Crawler", logging.INFO, None, "log/Crawler.log")
 
@@ -68,7 +69,8 @@ class BaseCrawler:
 
     def _init_utils(self):
         self._threadpool = DarkThreadPool(75)
-        self._rollback_method = BinaryRollBack(10)
+        # self._rollback_method = BinaryRollBack(10)
+        self._rollback_method = SequenceRollBack(10)
 
     def _get_one_random_proxy_from_pool(self):
         proxy = requests.get(self._proxy_pool).text.strip()
@@ -122,7 +124,8 @@ class BaseCrawler:
     def _crawl_catalog(self):
         catalogs = self._homepage.select(self._catalog_selector)
         for item in catalogs:
-            self._book_catalog.append(item.get_text().encode(self._encode_type).decode(self._decode_type))
+            self._book_catalog.append(
+                item.get_text().encode(self._encode_type).decode(self._decode_type, errors="ignore"))
             self._catalog_urls.append(self._server + item.get("href"))
         self._catalog_num = len(self._book_catalog)
 
@@ -203,7 +206,8 @@ class BaseCrawler:
                 succeed = self._check_content(str(content))
                 break
             except Exception as e:
-                crawler_logger.error("{}".format(e))
+                crawler_logger.error(url)
+                crawler_logger.error(traceback.format_exc())
                 time.sleep(self._rollback_method.select(retry_count))
         if not succeed:
             self._content_list.append(("", index))
